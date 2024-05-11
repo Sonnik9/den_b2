@@ -49,34 +49,29 @@ class TEMPLATES(TG_ASSISTENT):
 
     @log_exceptions_decorator
     def make_orders_template(self, qty, market_type, target_price):
-        # //////////////////////////////////////////////
-        create_order_success_flag = False
-        response_list = []
-        self.direction = self.direction*self.is_closing
+        order_answer = {}
+        response_list = []        
         side = 'BUY' if self.direction == 1 else 'SELL'
         try:
             order_answer = self.make_order(self.symbol, qty, side, market_type, target_price)
-            # print(order_answer)
             response_list.append(order_answer)
-            if order_answer['status'] == 'FILLED':
-                create_order_success_flag = True
-                if self.is_closing == 1:
-                    print(f'The {side} position {market_type} type order was opened successfully!')
-                else:
-                    print(f'The current position was closed successfully!')
-            elif order_answer['status'] == 'PARTIALLY_FILLED':
-                create_order_success_flag = True
-                if self.is_closing == 1:
-                    print(f'The {side} position {market_type} type order was opened successfully!')
-                else:
-                    print(f'The current position was closed partially!') 
-            else:
-                print(f'The {side} position was NOT opened...')
-
         except Exception as ex:
             print(ex)
-
-        return response_list, create_order_success_flag
+        return response_list, self.response_order_logger(order_answer, side, market_type)
+    
+    @log_exceptions_decorator
+    def make_sl_tp_template(self, qty, market_type_list, target_price_list):
+        order_answer = None
+        response_success_list = []
+        side = 'BUY' if self.direction == -1 else 'SELL'
+        for market_type, target_price in zip(market_type_list, target_price_list):
+            try:
+                order_answer = self.make_order(self.symbol, qty, side, market_type, target_price)
+                response_success_list.append(self.response_order_logger(order_answer, side, market_type))
+                time.sleep(0.1)
+            except Exception as ex:
+                print(ex)
+        return all(response_success_list)
     
     def pre_trading_info_template(self):
         symbol_info = self.get_excangeInfo()  
@@ -196,56 +191,44 @@ class MAIN_CONTROLLER(TEMPLATES):
                 self.direction = 1 if self.get_signal_val == "LONG_SIGNAL" else -1                                      
                 self.response_trading_list, create_order_success_flag = self.make_orders_template(self.qty, 'MARKET', None)             
                 response_trading_total_list += self.response_trading_list
-                # create_order_success_flag = True # test              
-                # /////////////////// create order logic//////////////////////////////                
-                if create_order_success_flag:
-                    create_order_success_flag = False                    
-                    print(self.response_trading_list)
-                    # //////////////////////////////////////////////////////////////////
-                    self.enter_price, self.executed_qty = self.post_trading_info_template(self.response_trading_list, self.qty, self.cur_price)                     
-                    # /////////////////////////////////////////////////////////////////////
-                    stop_loss_ratio = self.calculate_stop_loss_ratio(self.direction, self.enter_price, self.cur_klines_data, self.stop_loss_type, self.default_stop_loss_ratio_val)  
-                    print(f"stop_loss_ratio: {stop_loss_ratio}") 
-                    # устанавливаем фиксированный стоп лосс ордер в качестве подстраховки:
-                    target_price = self.enter_price* (1 - self.direction*stop_loss_ratio)
-                    self.direction = self.direction*(-1)
-                    self.response_trading_list, create_order_success_flag = self.make_orders_template(self.qty, 'STOP_MARKET', target_price)             
-                    response_trading_total_list += self.response_trading_list
-                    self.direction = self.direction*(-1)
-                    if self.stop_loss_global_type == 'TRAILLING_GLOBAL_TYPE':
-                        self.stop_order_total_multipliter = await self.stop_logic_price_monitoring(self.symbol, self.direction, self.enter_price, stop_loss_ratio)
-                        stop_loss_ratio = None
-                        # self.stop_order_total_multipliter = 0 # test
-                        print(f"stop_order_total_multipliter: {self.stop_order_total_multipliter}")
-                        if self.stop_order_total_multipliter is not None:                            
-                            if not self.is_open_position_true(self.symbol):                        
-                                print("The current position probably was closed manualy or as result some others anomaly...")
-                                self.default_post_trading_vars()
-                                # return # test
-                                continue
-                            print("Position is avialable yet")
-                            self.is_closing = -1
-                            self.response_trading_list, self.close_position_success_flag = self.make_orders_template(self.executed_qty)
-                            response_trading_total_list += self.response_trading_list
-                            if self.close_position_success_flag:
-                                show_post_trade_info_answer = self.show_post_trade_info(self.stop_order_total_multipliter)   
-                                print(show_post_trade_info_answer)                             
-                                self.default_post_trading_vars()                         
-                            else:
-                                print('Some problems with closing position...')                            
-                        else:
-                            print("Stop_logic_price_monitoring func was finished uncorrectly...")
-                    elif self.stop_loss_global_type == 'FIXED_GLOBAL_TYPE':
-                        target_price = self.enter_price* (1 + self.direction*stop_loss_ratio)
-                        self.direction = self.direction*(-1)
-                        self.response_trading_list, create_order_success_flag = self.make_orders_template(self.qty, 'TAKE_PROFIT_MARKET', target_price)             
-                        response_trading_total_list += self.response_trading_list
-                        self.direction = self.direction*(-1)
-
             else:
                 print("NO_SIGNAL")
-            # return # test
-            # ///////////////////////////////////////////////////////////////////////////
+                continue
+            # create_order_success_flag = True # test              
+            # /////////////////// create order logic//////////////////////////////                
+            if create_order_success_flag:
+                in_position = True
+                create_order_success_flag = False                    
+                print(self.response_trading_list)
+                # //////////////////////////////////////////////////////////////////
+                self.enter_price, self.executed_qty = self.post_trading_info_template(self.response_trading_list, self.qty, self.cur_price)                     
+                # /////////////////////////////////////////////////////////////////////
+                stop_loss_ratio = self.calculate_stop_loss_ratio(self.direction, self.enter_price, self.cur_klines_data, self.stop_loss_type, self.default_stop_loss_ratio_val)  
+                print(f"stop_loss_ratio: {stop_loss_ratio}") 
+
+                if self.stop_loss_global_type == 'TRAILLING_GLOBAL_TYPE':
+                    side = 'SELL' if self.direction == 1 else 'BUY'
+                    tralling_stop_order_true = self.tralling_stop_order(self.symbol, self.executed_qty, side, stop_loss_ratio)
+                    stop_loss_ratio = None
+                    self.default_post_trading_vars()
+                elif self.stop_loss_global_type == 'FIXED_GLOBAL_TYPE':
+                    # устанавливаем фиксированный стоп лосс ордер:
+                    target_sl_price = None
+                    self.direction = self.direction*(-1)
+                    # //////////////////////
+                    target_sl_price = self.enter_price* (1 - self.direction*stop_loss_ratio)
+                    self.direction = self.direction*(-1)
+                    response_stop_order = self.make_orders_template(self.qty, 'STOP_MARKET', target_sl_price)     
+                    # устанавливаем фиксированный тейк профит ордер:
+                    target_price = self.enter_price* (1 + self.direction*stop_loss_ratio)                    
+                    response_take_order = self.make_orders_template(self.qty, 'TAKE_PROFIT_MARKET', target_price)             
+                    response_trading_total_list += self.response_trading_list
+                    self.direction = self.direction*(-1) 
+                                     
+            if not self.is_open_position_true(self.symbol):                        
+                print("Position is avialable yet") 
+                in_position = False                  
+
 
 if __name__=="__main__": 
     asyncio.run(MAIN_CONTROLLER().main_func())

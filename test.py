@@ -7,4 +7,7 @@
 # time_ms = 1715009880792
 # print(milliseconds_to_datetime(time_ms))
 
+# response_success_list = [True, True]
+# print(all(response_success_list))
+
   

@@ -106,7 +106,7 @@ class PARAMS():
         self.response_trading_list = []
 
     def default_post_trading_vars(self):
-        self.is_closing = 1
+        # self.is_closing = 1
         self.executed_qty = None 
         self.enter_price = None            
         self.order_id = None            

@@ -607,3 +607,73 @@
 #         }
 #         url = f'https://coinmarketcap.com/ru/'
 #         return self.coin_market_cup_engin(url, headers)
+
+
+            # if create_order_success_flag:
+            #     create_order_success_flag = False                    
+            #     print(self.response_trading_list)
+            #     # //////////////////////////////////////////////////////////////////
+            #     self.enter_price, self.executed_qty = self.post_trading_info_template(self.response_trading_list, self.qty, self.cur_price)                     
+            #     # /////////////////////////////////////////////////////////////////////
+            #     stop_loss_ratio = self.calculate_stop_loss_ratio(self.direction, self.enter_price, self.cur_klines_data, self.stop_loss_type, self.default_stop_loss_ratio_val)  
+            #     print(f"stop_loss_ratio: {stop_loss_ratio}") 
+            #     # устанавливаем фиксированный стоп лосс ордер в качестве подстраховки:
+            #     target_price = self.enter_price* (1 - self.direction*stop_loss_ratio)
+            #     self.direction = self.direction*(-1)
+            #     self.response_trading_list, create_order_success_flag = self.make_orders_template(self.qty, 'STOP_MARKET', target_price)             
+            #     response_trading_total_list += self.response_trading_list
+            #     self.direction = self.direction*(-1)
+            #     if self.stop_loss_global_type == 'TRAILLING_GLOBAL_TYPE':
+            #         # self.tralling_stop_order(self.symbol, self.executed_qty, side, stop_loss_ratio)
+            #         # self.stop_order_total_multipliter = await self.stop_logic_price_monitoring(self.symbol, self.direction, self.enter_price, stop_loss_ratio) # old 
+            #         stop_loss_ratio = None
+            #         # self.stop_order_total_multipliter = 0 # test
+            #         print(f"stop_order_total_multipliter: {self.stop_order_total_multipliter}")
+            #         if self.stop_order_total_multipliter is not None:                            
+            #             if not self.is_open_position_true(self.symbol):                        
+            #                 print("The current position probably was closed manualy or as result some others anomaly...")
+            #                 self.default_post_trading_vars()
+            #                 # return # test
+            #                 continue
+            #             print("Position is avialable yet")
+            #             self.is_closing = -1
+            #             self.response_trading_list, self.close_position_success_flag = self.make_orders_template(self.executed_qty)
+            #             response_trading_total_list += self.response_trading_list
+            #             if self.close_position_success_flag:
+            #                 show_post_trade_info_answer = self.show_post_trade_info(self.stop_order_total_multipliter)   
+            #                 print(show_post_trade_info_answer)                             
+            #                 self.default_post_trading_vars()                         
+            #             else:
+            #                 print('Some problems with closing position...')                            
+            #         else:
+            #             print("Stop_logic_price_monitoring func was finished uncorrectly...")
+
+
+
+    # def response_order_logger(self, order_answer, side, market_type):
+    #     create_order_success_flag = False        
+    #     if order_answer['status'] == 'FILLED':
+    #         create_order_success_flag = True
+    #         if is_closing == 1:
+    #             print(f'The {side} position {market_type} type order was opened successfully!')
+    #         else:
+    #             print(f'The current position was closed successfully!')
+    #     elif order_answer['status'] == 'PARTIALLY_FILLED':
+    #         create_order_success_flag = True
+    #         if is_closing == 1:
+    #             print(f'The {side} position {market_type} type order was opened successfully!')
+    #         else:
+    #             print(f'The current position was closed partially!') 
+    #     else:
+    #         print(f'The {side} position was NOT opened...')
+    #     return create_order_success_flag
+
+    # def response_order_logger(self, order_answer, side, market_type):   
+    #     if order_answer['status'] == 'FILLED':
+    #         print(f'The {side} position {market_type} type order was opened successfully!')
+    #         return True
+    #     elif order_answer['status'] == 'PARTIALLY_FILLED':
+    #         print(f'The {side} position {market_type} type order was opened with a status PARTIALLY_FILLED')
+    #         return True
+    #     print(f'The {side} position {market_type} type orde was NOT opened...')
+    #     return False

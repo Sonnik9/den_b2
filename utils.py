@@ -54,14 +54,14 @@ class UTILS():
         wait_time = next_interval - current_time
         return int(wait_time)
     
-    @log_exceptions_decorator
-    def show_post_trade_info(self, stop_loss_multiplier):
-        if stop_loss_multiplier == -1:
-            return "The position closed with a loss/Позиция закрыта c убытком"
-        elif stop_loss_multiplier == 0:
-            return "The position is closed at the breakeven point/Позиция закрыта в точке безубыточности"
-        else:
-            return f"Position closed with a profit. Trailling multipliter is equal: {stop_loss_multiplier}\n Позиция закрыта c прибылью. Множетель позиции равен {stop_loss_multiplier}"
+    # @log_exceptions_decorator
+    # def show_post_trade_info(self, stop_loss_multiplier):
+    #     if stop_loss_multiplier == -1:
+    #         return "The position closed with a loss/Позиция закрыта c убытком"
+    #     elif stop_loss_multiplier == 0:
+    #         return "The position is closed at the breakeven point/Позиция закрыта в точке безубыточности"
+    #     else:
+    #         return f"Position closed with a profit. Trailling multipliter is equal: {stop_loss_multiplier}\n Позиция закрыта c прибылью. Множетель позиции равен {stop_loss_multiplier}"
     
     @log_exceptions_decorator
     def usdt_to_qnt_converter(self, symbol, depo, symbol_info, cur_price):
@@ -125,6 +125,17 @@ class COIN_MARKET_API_PARSER():
                     pass
             return top_coins_total_list
         return
+    
+    def response_order_logger(self, order_answer, side, market_type):   
+        if order_answer['status'] == 'FILLED':
+            print(f'{side} позиция {market_type} типа была открыта успешно!')
+            return True
+        elif order_answer['status'] == 'PARTIALLY_FILLED':
+            print(f'{side} позиция {market_type} типа была открыта co статусом PARTIALLY_FILLED')
+            return True
+        print(f'{side} позиция {market_type} типа не была открыта...')
+        return False
+
 
 # print(COIN_MARKET_API_PARSER().coin_market_cup_top())
                                     

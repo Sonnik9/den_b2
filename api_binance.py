@@ -111,4 +111,19 @@ class BINANCE_API(CONNECTOR_BINANCEE):
         params['newOrderRespType'] = 'RESULT' # default 'ASK'
         params = self.get_signature(params)
         return self.HTTP_request(self.create_order_url, method='POST', headers=self.headers, params=params)
+
+
+    @log_exceptions_decorator
+    def tralling_stop_order(self, symbol, qty, side, callback_rate, market_type='TRAILING_STOP_MARKET'): 
+        params = {}        
+        params["symbol"] = symbol        
+        params["type"] = market_type
+        params["quantity"] = qty
+        params['callbackRate'] = callback_rate
+        params["side"] = side
+        params["recvWindow"] = 5000
+        params['newOrderRespType'] = 'RESULT' # default 'ASK'
+        params = self.get_signature(params)
+        return self.HTTP_request(self.create_order_url, method='POST', headers=self.headers, params=params)
+
 # print(BINANCE_API().get_klines('BTCUSDT'))
