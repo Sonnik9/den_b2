@@ -60,6 +60,16 @@ class TEMPLATES(TG_ASSISTENT):
         return response_list, self.response_order_logger(order_answer, side, market_type)
     
     @log_exceptions_decorator
+    def make_tralling_sl_template(self, qty, stop_loss_ratio):
+        order_answer = None
+        side = 'BUY' if self.direction == -1 else 'SELL'
+        try:
+            order_answer = self.tralling_stop_order(self.symbol, qty, side, stop_loss_ratio)            
+        except Exception as ex:
+            print(ex)
+        return self.response_order_logger(order_answer, side, 'TRAILING_STOP_MARKET')
+    
+    @log_exceptions_decorator
     def make_sl_tp_template(self, qty, market_type_list, target_price_list):
         order_answer = None
         response_success_list = []
@@ -74,12 +84,13 @@ class TEMPLATES(TG_ASSISTENT):
         return all(response_success_list)
     
     def pre_trading_info_template(self):
-        symbol_info = self.get_excangeInfo()  
+        symbol_info = self.get_excangeInfo() 
+        self.cur_klines_data = self.get_klines(self.symbol) 
         cur_price = self.cur_klines_data['Close'].iloc[-1]
-        qty, _ = self.usdt_to_qnt_converter(self.symbol, self.depo, symbol_info, cur_price)
+        qty, price_precession = self.usdt_to_qnt_converter(self.symbol, self.depo, symbol_info, cur_price)
         print("qty, cur_price:")
         self.from_anomal_view_to_normal([qty, cur_price]) 
-        return cur_price, qty    
+        return cur_price, qty, price_precession   
     
     def post_trading_info_template(self, response_trading_list, qty, cur_price):
         # //////////////////////////////////////////////////////////////////
@@ -107,10 +118,8 @@ class TEMPLATES(TG_ASSISTENT):
                                 (float(ticker['lastPrice']) >= self.MIN_FILTER_PRICE) and (
                                         float(ticker['lastPrice']) <= self.MAX_FILTER_PRICE)]
 
-                # print(top_pairs[:4])
                 top_pairs = sorted(top_pairs, key=lambda x: float(x['quoteVolume']), reverse=True)
                 top_pairs = top_pairs[:self.SLICE_VOLUME_BINANCE_PAIRS]
-                # print(top_pairs)
 
                 if self.min_volume_usdtFilter_flag:
                     top_pairs = [x for x in top_pairs if float(x['quoteVolume']) >= self.MIN_VOLUM_USDT]
@@ -118,7 +127,6 @@ class TEMPLATES(TG_ASSISTENT):
                 if self.slice_volatilyty_flag:
                     top_pairs = sorted(top_pairs, key=lambda x: abs(float(x['priceChangePercent'])), reverse=True)
                     top_pairs = top_pairs[:self.SLICE_VOLATILITY]
-                    # print(top_pairs)
                 if self.daily_filter_direction == 1:
                     top_pairs = [x for x in top_pairs if float(x['priceChange']) > 0]
                 elif self.daily_filter_direction == -1:
@@ -141,7 +149,6 @@ class MAIN_CONTROLLER(TEMPLATES):
   
     @log_exceptions_decorator
     async def main_func(self):
-        # print('zdkgh')
         # symbolsss = self.get_top_coins_template()
         # print(symbolsss)
         # return
@@ -150,11 +157,8 @@ class MAIN_CONTROLLER(TEMPLATES):
         print(f"Hello {self.my_name}!\nYour marketplace is: <<{self.market_place.upper()}>>\nYour type market is: <<{self.market_type.upper()}>>\nMay God blass you!!")
         # //////////////////////////////
         self.run_flag = True
-        response_trading_total_list = []   
         in_position = False     
         create_order_success_flag = False 
-        stop_loss_ratio = None  
-        target_price = None   
         # //////////////////////////////////
         print("set default margin_type:")
         set_margin_resp = self.set_margin_type(self.symbol, self.margin_type)
@@ -164,7 +168,8 @@ class MAIN_CONTROLLER(TEMPLATES):
         print(set_leverage_resp)
         # ////////////////////////////////////////////////////////////
         while True:
-            self.default_pre_trading_vars()
+            self.cur_klines_data = None
+            get_signal_val = None
             if self.stop_bot_flag:
                 self.last_message.text = self.connector_func(self.last_message, "EMA bot was stoped!")
                 print("EMA bot was stoped!")
@@ -172,63 +177,69 @@ class MAIN_CONTROLLER(TEMPLATES):
                 return
             # //////////////////////////////////////////////////////////////////////
             time.sleep(5) # test
-            ### self.wait_time = self.time_calibrator(self.kline_time, self.time_frame)
-            self.wait_time = self.time_calibrator(1, self.time_frame) #- проверять сигнал каждую минуту
-            # print(f"Ожидание {self.wait_time} секунд до следующего временного интервала...")         
-            await asyncio.sleep(self.wait_time) 
-            # //////////////////////////////////////////////////////////////////////
-            self.get_signal_val = await self.get_signal_shell()
-            # # # /////////// test:
-            # self.cur_klines_data = self.get_klines(self.symbol)
-            # self.get_signal_val = "LONG_SIGNAL"
-            # self.get_signal_val = "SHORT_SIGNAL"
-            # # # ///////////////////////////////////////////
-            if self.get_signal_val:                
-                # self.last_message.text = self.connector_func(self.last_message, self.get_signal_val)
-                print(self.get_signal_val)
-                self.cur_price, self.qty = self.pre_trading_info_template()
-                # /////////////////// create order logic//////////////////////////////
-                self.direction = 1 if self.get_signal_val == "LONG_SIGNAL" else -1                                      
-                self.response_trading_list, create_order_success_flag = self.make_orders_template(self.qty, 'MARKET', None)             
-                response_trading_total_list += self.response_trading_list
+            # ### wait_time = self.time_calibrator(self.kline_time, self.time_frame)
+            # wait_time = self.time_calibrator(1, self.time_frame) #- проверять сигнал каждую минуту
+            # # print(f"Ожидание {wait_time} секунд до следующего временного интервала...")         
+            # await asyncio.sleep(wait_time) 
+            # # //////////////////////////////////////////////////////////////////////
+
+            if not in_position:
+                # get_signal_val = await self.get_signal_shell()
+                # # # /////////// test:
+                self.cur_klines_data = self.get_klines(self.symbol)
+                get_signal_val = "LONG_SIGNAL"
+                # get_signal_val = "SHORT_SIGNAL"
+                # # # ///////////////////////////////////////////
+                if get_signal_val:                
+                    # self.last_message.text = self.connector_func(self.last_message, get_signal_val)
+                    print(get_signal_val)
+                    qty = None
+                    cur_price = None
+                    price_precession = None
+                    self.direction = None
+                    response_trading_list = None
+                    cur_price, qty, price_precession = self.pre_trading_info_template()
+                    # /////////////////// create order logic//////////////////////////////
+                    self.direction = 1 if get_signal_val == "LONG_SIGNAL" else -1                                      
+                    response_trading_list, create_order_success_flag = self.make_orders_template(qty, 'MARKET', None)             
+                else:
+                    print("NO_SIGNAL")
+                    continue 
             else:
-                print("NO_SIGNAL")
-                continue
-            # create_order_success_flag = True # test              
-            # /////////////////// create order logic//////////////////////////////                
+                if not self.is_open_position_true(self.symbol):                        
+                    print("Position is closing!") 
+                    in_position = False 
+                else:
+                    print("Position is avialable yet")
+                    continue
+             
             if create_order_success_flag:
                 in_position = True
-                create_order_success_flag = False                    
-                print(self.response_trading_list)
+                create_order_success_flag = False  
+                executed_qty = None 
+                enter_price = None 
+                stop_loss_ratio = None                   
+                print(response_trading_list)
                 # //////////////////////////////////////////////////////////////////
-                self.enter_price, self.executed_qty = self.post_trading_info_template(self.response_trading_list, self.qty, self.cur_price)                     
+                enter_price, executed_qty = self.post_trading_info_template(response_trading_list, qty, cur_price)                     
                 # /////////////////////////////////////////////////////////////////////
-                stop_loss_ratio = self.calculate_stop_loss_ratio(self.direction, self.enter_price, self.cur_klines_data, self.stop_loss_type, self.default_stop_loss_ratio_val)  
+                stop_loss_ratio = self.calculate_stop_loss_ratio(self.direction, enter_price, self.cur_klines_data, self.stop_loss_type, self.default_stop_loss_ratio_val)  
                 print(f"stop_loss_ratio: {stop_loss_ratio}") 
 
                 if self.stop_loss_global_type == 'TRAILLING_GLOBAL_TYPE':
-                    side = 'SELL' if self.direction == 1 else 'BUY'
-                    tralling_stop_order_true = self.tralling_stop_order(self.symbol, self.executed_qty, side, stop_loss_ratio)
-                    stop_loss_ratio = None
-                    self.default_post_trading_vars()
+                    if not self.make_tralling_sl_template(executed_qty, stop_loss_ratio):
+                        print("Что-то пошло не так... вырубаемся!!")   
+                        return          
+                    
                 elif self.stop_loss_global_type == 'FIXED_GLOBAL_TYPE':
-                    # устанавливаем фиксированный стоп лосс ордер:
                     target_sl_price = None
-                    self.direction = self.direction*(-1)
-                    # //////////////////////
-                    target_sl_price = self.enter_price* (1 - self.direction*stop_loss_ratio)
-                    self.direction = self.direction*(-1)
-                    response_stop_order = self.make_orders_template(self.qty, 'STOP_MARKET', target_sl_price)     
-                    # устанавливаем фиксированный тейк профит ордер:
-                    target_price = self.enter_price* (1 + self.direction*stop_loss_ratio)                    
-                    response_take_order = self.make_orders_template(self.qty, 'TAKE_PROFIT_MARKET', target_price)             
-                    response_trading_total_list += self.response_trading_list
-                    self.direction = self.direction*(-1) 
-                                     
-            if not self.is_open_position_true(self.symbol):                        
-                print("Position is avialable yet") 
-                in_position = False                  
-
+                    target_tp_price = None
+                    tp_multipliter = float(self.ricks_earnings_ratio.split('/').strip()[1])
+                    target_sl_price = round((enter_price* (1 - self.direction*stop_loss_ratio)), price_precession)
+                    target_tp_price = round((enter_price* (1 + self.direction*stop_loss_ratio*tp_multipliter)), price_precession)
+                    if not self.make_sl_tp_template(executed_qty, ['STOP_MARKET', 'TAKE_PROFIT_MARKET'], [target_sl_price, target_tp_price]):
+                        print("Что-то пошло не так... вырубаемся!!")   
+                        return 
 
 if __name__=="__main__": 
     asyncio.run(MAIN_CONTROLLER().main_func())

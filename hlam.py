@@ -677,3 +677,23 @@
     #         return True
     #     print(f'The {side} position {market_type} type orde was NOT opened...')
     #     return False
+
+    # def usdt_to_qnt_converter(self, symbol, depo, symbol_info, cur_price):
+    #     qty = None
+    #     symbol_data = next((item for item in symbol_info["symbols"] if item['symbol'] == symbol), None)
+    #     print(symbol_data)
+    #     # //////////////////////
+    #     quantity_precision = int(float(symbol_data['quantityPrecision']))
+    #     price_precision = int(symbol_data['pricePrecision']) 
+    #     print(f"quantity_precision: {quantity_precision}")
+    #     qty = round(depo / cur_price, quantity_precision)
+    #     # min_qnt = float(symbol_data['filters'][1]['minQty'])
+    #     # print(f"min_qnt: {min_qnt}")
+    #     # max_qnt = float(symbol_data['filters'][1]['maxQty']) 
+    #     # if qty <= min_qnt:
+    #     #     return min_qnt, quantity_precision              
+    #     # elif qty >= max_qnt:
+    #     #     return max_qnt, quantity_precision    
+    #     return qty, price_precision
+
+# {'symbol': 'DOGEUSDT', 'pair': 'DOGEUSDT', 'contractType': 'PERPETUAL', 'deliveryDate': 4133404800000, 'onboardDate': 1569398400000, 'status': 'TRADING', 'maintMarginPercent': '2.5000', 'requiredMarginPercent': '5.0000', 'baseAsset': 'DOGE', 'quoteAsset': 'USDT', 'marginAsset': 'USDT', 'pricePrecision': 6, 'quantityPrecision': 0, 'baseAssetPrecision': 8, 'quotePrecision': 8, 'underlyingType': 'COIN', 'underlyingSubType': ['Meme'], 'settlePlan': 0, 'triggerProtect': '0.1000', 'liquidationFee': '0.010000', 'marketTakeBound': '0.10', 'maxMoveOrderLimit': 10000, 'filters': [{'maxPrice': '30', 'minPrice': '0.002440', 'filterType': 'PRICE_FILTER', 'tickSize': '0.000010'}, {'minQty': '1', 'maxQty': '50000000', 'stepSize': '1', 'filterType': 'LOT_SIZE'}, {'filterType': 'MARKET_LOT_SIZE', 'minQty': '1', 'maxQty': '30000000', 'stepSize': '1'}, {'limit': 200, 'filterType': 'MAX_NUM_ORDERS'}, {'filterType': 'MAX_NUM_ALGO_ORDERS', 'limit': 10}, {'filterType': 'MIN_NOTIONAL', 'notional': '5'}, {'filterType': 'PERCENT_PRICE', 'multiplierUp': '1.1000', 'multiplierDecimal': '4', 'multiplierDown': '0.9000'}], 'orderTypes': ['LIMIT', 'MARKET', 'STOP', 'STOP_MARKET', 'TAKE_PROFIT', 'TAKE_PROFIT_MARKET', 'TRAILING_STOP_MARKET'], 'timeInForce': ['GTC', 'IOC', 'FOK', 'GTX', 'GTD']}

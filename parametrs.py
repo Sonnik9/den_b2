@@ -24,14 +24,15 @@ class PARAMS():
         # self.get_all_orders_url = 'https://fapi.binance.com/fapi/v1/openOrders'
         # self.cancel_all_orders_url = 'https://fapi.binance.com/fapi/v1/allOpenOrders'
         # self.account_url = 'https://fapi.binance.com/fapi/v2/account'
-        # ///////////////////////////////////////////////////////////////
+        # ////////////////////// некоторые переменные /////////////////////////////////////////
+        self.cur_klines_data = None
+        self.direction = None 
+        # ////////////////////////////////////
         self.trading_must_have_settings()
         self.filter_settings()
         self.stop_loss_settings()
         self.ema_settings()
         self.default_tg_vars()
-        self.default_pre_trading_vars()
-        self.default_post_trading_vars()
         self.init_keys()
 
     def trading_must_have_settings(self):
@@ -62,7 +63,7 @@ class PARAMS():
         self.stop_loss_global_type = 'TRAILLING_GLOBAL_TYPE' # треллинг стоп лосс 
         # self.stop_loss_global_type = 'FIXED_GLOBAL_TYPE' # фиксированные стоп лосс и тейк профит
         # ниже параметры для расчета stop_loss_ratio (stop_loss_ratio = abs(точка входа - точка стоп лосса)/ точка входа):
-        self.ricks_earnings_ratio = '1/4' # соотношение риска к прибыли. только для 'FIXED_GLOBAL_TYPE'
+        self.ricks_earnings_ratio = '1/3' # соотношение риска к прибыли. только для 'FIXED_GLOBAL_TYPE'
         # //////// способы вычисления точки стоп лосса: /////////////////
         self.stop_loss_type = 'LAST_MIN' # стоп лосс по последнуму локальному минимуму или максимуму
         # self.stop_loss_type = 'ABSOLUTE_MIN' # стоп лосс по минимуму или максимуму за определенный период. Берется период равный длине наибольшего периода ema
@@ -92,26 +93,8 @@ class PARAMS():
         self.block_acess_counter = 0
         self.seq_control_flag = False
         self.seq_control_token = False
-        self.dont_seq_control = False
         self.stop_redirect_flag = False  
         self.settings_redirect_flag = False
-
-    def default_pre_trading_vars(self):
-        self.cur_klines_data = None
-        self.get_signal_val = None
-        self.direction = None            
-        self.qty = None
-        self.cur_price = None
-        self.wait_time = None
-        self.response_trading_list = []
-
-    def default_post_trading_vars(self):
-        # self.is_closing = 1
-        self.executed_qty = None 
-        self.enter_price = None            
-        self.order_id = None            
-        self.close_position_success_flag = False
-        self.stop_order_total_multipliter = None 
 
     def init_keys(self): 
         # ////////////////////// инициализация ключей: ///////////////////////////////

@@ -114,7 +114,7 @@ class BINANCE_API(CONNECTOR_BINANCEE):
 
 
     @log_exceptions_decorator
-    def tralling_stop_order(self, symbol, qty, side, callback_rate, market_type='TRAILING_STOP_MARKET'): 
+    def tralling_stop_order(self, symbol, qty, side, callback_rate, market_type='TRAILING_STOP_MARKET'):
         params = {}        
         params["symbol"] = symbol        
         params["type"] = market_type

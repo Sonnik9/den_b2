@@ -65,21 +65,17 @@ class UTILS():
     
     @log_exceptions_decorator
     def usdt_to_qnt_converter(self, symbol, depo, symbol_info, cur_price):
-        qty = None
         symbol_data = next((item for item in symbol_info["symbols"] if item['symbol'] == symbol), None)
+        print(symbol_data)
         # //////////////////////
         quantity_precision = int(float(symbol_data['quantityPrecision']))
-        print(f"quantity_precision2: {quantity_precision}")
-        qty = round(depo / cur_price, quantity_precision)
-        # min_qnt = float(symbol_data['filters'][1]['minQty'])
-        # print(f"min_qnt: {min_qnt}")
-        # max_qnt = float(symbol_data['filters'][1]['maxQty']) 
-        # if qty <= min_qnt:
-        #     return min_qnt, quantity_precision              
-        # elif qty >= max_qnt:
-        #     return max_qnt, quantity_precision    
-        return qty, quantity_precision
-
+        price_precision = int(symbol_data['pricePrecision']) 
+        print(f"quantity_precision: {quantity_precision}")
+        min_notional = int(float(next((f['notional'] for f in symbol_data['filters'] if f['filterType'] == 'MIN_NOTIONAL'), 0)))
+        if depo <= min_notional:
+            depo = min_notional
+        return round(depo / cur_price, quantity_precision), price_precision
+    
     @log_exceptions_decorator
     def from_anomal_view_to_normal(self, strange_list):
         normal_list = [] 
@@ -126,16 +122,14 @@ class COIN_MARKET_API_PARSER():
             return top_coins_total_list
         return
     
-    def response_order_logger(self, order_answer, side, market_type):   
-        if order_answer['status'] == 'FILLED':
-            print(f'{side} позиция {market_type} типа была открыта успешно!')
-            return True
-        elif order_answer['status'] == 'PARTIALLY_FILLED':
-            print(f'{side} позиция {market_type} типа была открыта co статусом PARTIALLY_FILLED')
-            return True
+    def response_order_logger(self, order_answer, side, market_type): 
+        if order_answer is not None:  
+            if order_answer['status'] == 'FILLED':
+                print(f'{side} позиция {market_type} типа была открыта успешно!')
+                return True
+            elif order_answer['status'] == 'PARTIALLY_FILLED':
+                print(f'{side} позиция {market_type} типа была открыта co статусом PARTIALLY_FILLED')
+                return True
         print(f'{side} позиция {market_type} типа не была открыта...')
         return False
-
-
-# print(COIN_MARKET_API_PARSER().coin_market_cup_top())
                                     
