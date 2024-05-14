@@ -44,8 +44,20 @@ class BINANCE_API(CONNECTOR_BINANCEE):
     def get_excangeInfo(self):     
         return self.HTTP_request(self.exchangeInfo_url, method='GET', headers=self.headers)
     
+    @log_exceptions_decorator
     def get_all_tickers(self):       
         return self.HTTP_request(self.all_tikers_url, method='GET', headers=self.headers)
+    
+    @log_exceptions_decorator
+    def get_all_orders(self, symbol):
+        params = {
+            'symbol': symbol,
+            # 'limit': limit
+        }
+        params = self.get_signature(params)
+        resp = self.HTTP_request(self.get_all_orders_url, method='GET', headers=self.headers, params=params)
+        # print(resp)
+        return resp
 
     @log_exceptions_decorator
     def get_klines(self, symbol):
@@ -100,6 +112,7 @@ class BINANCE_API(CONNECTOR_BINANCEE):
 
     @log_exceptions_decorator
     def make_order(self, symbol, qty, side, market_type, target_price): 
+        print(symbol, qty, side, market_type, target_price)
         params = {}        
         params["symbol"] = symbol        
         params["type"] = market_type
@@ -110,7 +123,9 @@ class BINANCE_API(CONNECTOR_BINANCEE):
         params["side"] = side
         params['newOrderRespType'] = 'RESULT' # default 'ASK'
         params = self.get_signature(params)
-        return self.HTTP_request(self.create_order_url, method='POST', headers=self.headers, params=params)
+        resp = self.HTTP_request(self.create_order_url, method='POST', headers=self.headers, params=params)
+        # print(resp)
+        return resp
 
 
     @log_exceptions_decorator
@@ -124,6 +139,6 @@ class BINANCE_API(CONNECTOR_BINANCEE):
         params["recvWindow"] = 5000
         params['newOrderRespType'] = 'RESULT' # default 'ASK'
         params = self.get_signature(params)
-        return self.HTTP_request(self.create_order_url, method='POST', headers=self.headers, params=params)
-
-# print(BINANCE_API().get_klines('BTCUSDT'))
+        resp = self.HTTP_request(self.create_order_url, method='POST', headers=self.headers, params=params)
+        # print(resp)
+        return resp

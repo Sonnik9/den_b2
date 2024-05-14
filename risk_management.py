@@ -1,10 +1,12 @@
-# import time 
+# import time
 # import random
 # import asyncio
 # import aiohttp
 # import json
-from log import log_exceptions_decorator
+from datetime import datetime, timedelta
 from techniques import STRATEGY
+from api_binance import BINANCE_API
+from log import log_exceptions_decorator
 
 class STOP_LOGIC(STRATEGY):
     def __init__(self):  
@@ -17,8 +19,6 @@ class STOP_LOGIC(STRATEGY):
             return
         stop_loss_ratio = None
         atr_period = period = int(candles_df.shape[0]/ 2.5) + 1  
-        # atr_period = 12 if atr_period < 12 else atr_period
-        # print(f"period : {period}")
         if stop_loss_type == 'FIXED':
             return fixed_stop_loss_ratio_val
         if stop_loss_type == 'ATR_VAL':
@@ -61,80 +61,84 @@ class STOP_LOGIC(STRATEGY):
             return fixed_stop_loss_ratio_val
         return round(stop_loss_ratio, 7)
     
-    # @log_exceptions_decorator
-    # def tralling_stop_loss_engin(self, price, enter_price, direction, stop_loss_ratio, stop_loss_multiplier, stop_loss, trigger_price, trigger_multiplier): 
-    #     # print(price, enter_price, direction, stop_loss_ratio, stop_loss_multiplier, stop_loss, trigger_price, trigger_multiplier)
-    #     jump_trigger_price_condition = False
-    #     stop_loss_trigger = False
-    #     jump_trigger_price_condition = price >= trigger_price if direction == 1 else price <= trigger_price
-    #     stop_loss_trigger = price <= stop_loss if direction == 1 else price >= stop_loss
-
-    #     if jump_trigger_price_condition:    
-    #         stop_loss_multiplier += 1
-    #         trigger_multiplier += 1
-    #         stop_loss = enter_price * (1 + direction*stop_loss_ratio * stop_loss_multiplier)
-    #         trigger_price = enter_price * (1 + direction*stop_loss_ratio * trigger_multiplier)
-    #         print(f"Stop_loss is moved on: {stop_loss}")
-    #     elif stop_loss_trigger:
-    #         print(f"stop_loss_trigger == True")
-    #         return -1, stop_loss_multiplier, stop_loss, trigger_price, trigger_multiplier
-
-    #     return 1, stop_loss_multiplier, stop_loss, trigger_price, trigger_multiplier
+class STATISTIC(BINANCE_API):
+    def __init__(self):  
+        super().__init__()  
+    
+    def last_statistic(self, symbol):        
+        init_order_price, oposit_order_price = 0, 0
+        try:
+            orders = self.get_all_orders(symbol)
+            orders= sorted(orders, key=lambda x: x["time"], reverse=True)
+            the_orders = []
+            for order in orders:
+                if len(the_orders) == 2:
+                    break
+                try:
+                    if order["status"] == 'FILLED':                        
+                        the_orders = [order] + the_orders                        
+                except:
+                    pass
+            init_order_price = float(the_orders[0].get('avgPrice', None))
+            oposit_order_price = float(the_orders[1].get('avgPrice', None))
+            if the_orders[0].get('side', None) == the_orders[1].get('side', None):
+                return 0, 0, 0, self.depo
+            if the_orders[0].get('side', None) == 'BUY':
+                if init_order_price - oposit_order_price > 0:
+                    return -1, init_order_price, oposit_order_price, self.depo
+                elif init_order_price - oposit_order_price < 0:
+                    return 1, init_order_price, oposit_order_price, self.depo
+            elif the_orders[0].get('side', None) == 'SELL':
+                if init_order_price - oposit_order_price > 0:
+                    return 1, init_order_price, oposit_order_price, self.depo
+                elif init_order_price - oposit_order_price < 0:
+                    return -1, init_order_price, oposit_order_price, self.depo
+        except Exception as ex:
+            print(ex)
+        return 0, init_order_price, oposit_order_price, self.depo
+    # /////////////////////////////////////////////////////////////
+    def get_next_show_statistic_time(self):
+        current_time = datetime.now()
+        target_time = current_time.replace(hour=self.show_statistic_hour, minute=0, second=0)
+        if current_time >= target_time:            
+            target_time += timedelta(days=1)        
+        return target_time
+    
+    def show_statistic_signal(self, target_time): 
+        now_time = datetime.now()      
+        if now_time >= target_time:
+            target_time = self.get_next_show_statistic_time()             
+            return True, target_time          
+        return False, target_time
+    # /////////////////////////////////////////////////////////////
+    def statistic_calculations(self, daily_trade_history_list):
+        result_statistic_dict = {}
+        if not isinstance(daily_trade_history_list, list) or len(daily_trade_history_list) == 0:
+            return {}
+        try:
+            result_statistic_dict["win_count"] = win_count = sum(1 for win_los, _, _, _ in daily_trade_history_list if win_los == 1)
+            result_statistic_dict["loss_count"] = loss_count = sum(1 for win_los, _, _, _ in daily_trade_history_list if win_los == -1)
+        except Exception as ex:
+            print(ex)
+        try:
+            total_trade_count = win_count + loss_count
+            if total_trade_count != 0:
+                result_statistic_dict["win_per"] = win_per = (win_count*100)/total_trade_count
+                result_statistic_dict["loss_per"] = loss_per = (loss_count*100)/total_trade_count
+                if loss_count != 0 and win_count != 0:
+                    result_statistic_dict["win_to_loss_relation"] = win_to_loss_relation = win_count/ loss_count
+                else:
+                    result_statistic_dict["win_to_loss_relation"] = win_to_loss_relation = f"{win_count}/{loss_count}"
+                result_statistic_dict["win_to_loss_statistik"] = win_to_loss_statistik = f"{win_count}:{loss_count}"
+        except Exception as ex:
+            print(ex)
         
-    # @log_exceptions_decorator
-    # async def stop_logic_price_monitoring(self, symbol, direction, enter_price, stop_loss_ratio):
-    #     # /////////////////////////////////////
-    #     last_close_price = None      
-    #     url = 'wss://stream.binance.com:9443/ws/'
-    #     # /////////////////////////////////////
-    #     max_retries = 10
-    #     retry_delay = 1  # seconds
-    #     retries = 0
-    #     # /////////////////////////////////////
-    #     is_closing = 1
-    #     stop_loss_multiplier = -1
-    #     trigger_multiplier = 1
-    #     stop_loss = enter_price * (1 + direction*stop_loss_ratio * stop_loss_multiplier)
-    #     trigger_price = enter_price * (1 + direction*stop_loss_ratio * trigger_multiplier)
-    #     # /////////////////////////////////////
-    #     while retries < max_retries:            
-    #         try:
-    #             async with aiohttp.ClientSession() as session:
-    #                 async with session.ws_connect(url + f"{symbol}@kline_1s") as ws:
-    #                     subscribe_request = {
-    #                         "method": "SUBSCRIBE",
-    #                         "params": [f"{symbol.lower()}@kline_1s"],
-    #                         "id": random.randrange(11,111111)
-    #                     }
-    #                     print('Stop_logic_price_monitoring start processing!')                        
-    #                     try:
-    #                         await ws.send_json(subscribe_request)
-    #                     except:
-    #                         pass
+        try:
+            result_statistic_dict["max_profit_abs"] = max_profit_abs = max((abs(init_order_price - oposit_order_price)/init_order_price)* last_depo for win_los, init_order_price, oposit_order_price, last_depo in daily_trade_history_list if win_los == 1)
+            result_statistic_dict["max_drawdown_abs"] = max_drawdown_abs = min(-1*(abs(init_order_price - oposit_order_price)/init_order_price)* last_depo for win_los, init_order_price, oposit_order_price, last_depo in daily_trade_history_list if win_los == -1)
+            result_statistic_dict["total_profit_abs"] = total_profit_abs = sum((abs(init_order_price - oposit_order_price)/init_order_price)* last_depo for win_los, init_order_price, oposit_order_price, last_depo in daily_trade_history_list if win_los == 1)
+            result_statistic_dict["total_losses_abs"] = total_losses_abs = sum(-1*(abs(init_order_price - oposit_order_price)/init_order_price)* last_depo for win_los, init_order_price, oposit_order_price, last_depo in daily_trade_history_list if win_los == -1)
+        except Exception as ex:
+            print(ex)
 
-    #                     async for msg in ws:
-    #                         if msg.type == aiohttp.WSMsgType.TEXT:
-    #                             try:
-    #                                 data = json.loads(msg.data)
-    #                                 kline_websocket_data = data.get('k', {})
-    #                                 if kline_websocket_data:
-    #                                     # print(kline_websocket_data)
-    #                                     last_close_price = float(kline_websocket_data.get('c'))
-    #                                     # print(f"last_close_price: {last_close_price}")
-    #                                     # await asyncio.sleep(2)
-    #                                     try:
-    #                                         is_closing, stop_loss_multiplier, stop_loss, trigger_price, trigger_multiplier = self.tralling_stop_loss_engin(last_close_price, enter_price, direction, stop_loss_ratio, stop_loss_multiplier, stop_loss, trigger_price, trigger_multiplier)                                            
-    #                                         if is_closing == -1:                                                                      
-    #                                             print(is_closing, stop_loss_multiplier, stop_loss, trigger_price, trigger_multiplier)
-    #                                             return stop_loss_multiplier
-    #                                     except Exception as ex:
-    #                                         print(ex)
-                                        
-    #                             except Exception as ex:
-    #                                 continue
-
-    #         except Exception as ex:
-    #             print(f"An error occurred: {ex}")
-    #             retries += 1
-    #             await asyncio.sleep(retry_delay * (2 ** retries))  # Exponential backoff
-    #     return
+        return result_statistic_dict

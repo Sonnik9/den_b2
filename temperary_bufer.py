@@ -43,7 +43,7 @@
 #                             if self.run_flag:
 #                                 message.text = self.connector_func(message, "Bot is run at current moment. Please stop bot firstable than try again...")
 #                             else: 
-                                # self.basic_default_params()                                                           
+#                                 self.basic_default_params()                                                           
 #                                 self.main_func()  
 #                         except Exception as ex:
 #                             print(ex) 
