@@ -58,11 +58,12 @@ class PARAMS():
         self.MIN_FILTER_PRICE = 0 # минимальный порог цены. Актуально если self.price_filter_flag = True
         self.MAX_FILTER_PRICE = math.inf # максимальный порог цены 
         self.daily_filter_direction = 0 # 0 -- пас. 1 -- искать только которые показывают растущую динамику (зеленые графики). -1 --- для падающих (красные графики) на бинанс
+        self.slice_volum_flag = True # флаг фильтра по объему
         self.slice_volatilyty_flag = True # находить самые волатильные на бинанс
-        self.SLICE_VOLATILITY = 50
+        self.SLICE_VOLATILITY = 30
         self.min_volume_usdtFilter_flag = False # искать по минимальному объему торгов за сутки на бинанс. False -- неактивный
         self.MIN_VOLUM_USDT = 10000000 # размер минимального обьема в usdt
-        self.SLICE_VOLUME_BINANCE_PAIRS = 30 # срез монет по объему торгов на бинанс
+        self.SLICE_VOLUME_BINANCE_PAIRS = 60 # срез монет по объему торгов на бинанс
         self.TOP_MARKET_CUP = 20 # срез монет. по коин маркет кап это будет первая двадцатка
 
     def stop_loss_settings(self):
@@ -126,13 +127,9 @@ class PARAMS():
 
     def init_keys(self): 
         # ////////////////////// инициализация ключей: ///////////////////////////////
-        self.api_key = BINANCE_API_PUBLIC_KEY = "vcn37RFPQUOE9IH9DOjNFQEnbd51dAFCNiw2IURVX8ThdqjhfgkLwspkcL1WhxK1"
-        self.api_secret = BINANCE_API_PRIVATE_KEY = "4WVbc7ATSwOBfCKUOh44KUuFhvJyiXdA63Oo1rYop5AQlJUiCmGj0kng6G1ds8Nf" 
-        self.tg_api_token = TG_TOKEN = "7113130467:AAEC09EcS4qUA9FmkbpxwrKdSbfEeqrhS9Q"
-        self.coinMarketCup_api_token = COIN_MARKET_CUP_TOKEN = "15dc358f-b26f-4200-8ee9-7f60b143480a"
-        self.seq_control_token = ACESS_TOKEN = "d100"
-        # self.api_key  = os.getenv(f"{self.market_place.upper()}_API_PUBLIC_KEY", "")
-        # self.api_secret = os.getenv(f"{self.market_place.upper()}_API_PRIVATE_KEY", "")
-        # self.tg_api_token = os.getenv("TG_TOKEN", "")
-        # self.coinMarketCup_api_token = os.getenv("COIN_MARKET_CUP_TOKEN", "")
-        # self.seq_control_token = os.getenv("ACESS_TOKEN", "")
+        self.api_key  = os.getenv(f"{self.market_place.upper()}_API_PUBLIC_KEY", "")
+        self.api_secret = os.getenv(f"{self.market_place.upper()}_API_PRIVATE_KEY", "")
+        self.tg_api_token = os.getenv("TG_TOKEN", "")
+        print(self.tg_api_token)
+        self.coinMarketCup_api_token = os.getenv("COIN_MARKET_CUP_TOKEN", "")
+        self.seq_control_token = os.getenv("ACESS_TOKEN", "")

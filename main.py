@@ -185,9 +185,9 @@ class TEMPLATES(TG_ASSISTENT):
                                 not any(exclusion in ticker['symbol'].upper() for exclusion in exclusion_contains_list) and
                                 (float(ticker['lastPrice']) >= self.MIN_FILTER_PRICE) and (
                                         float(ticker['lastPrice']) <= self.MAX_FILTER_PRICE)]
-
-                top_pairs = sorted(top_pairs, key=lambda x: float(x['quoteVolume']), reverse=True)
-                # top_pairs = top_pairs[:self.SLICE_VOLUME_BINANCE_PAIRS]
+                if self.slice_volum_flag:
+                    top_pairs = sorted(top_pairs, key=lambda x: float(x['quoteVolume']), reverse=True)
+                    top_pairs = top_pairs[:self.SLICE_VOLUME_BINANCE_PAIRS]
 
                 if self.min_volume_usdtFilter_flag:
                     top_pairs = [x for x in top_pairs if float(x['quoteVolume']) >= self.MIN_VOLUM_USDT]
