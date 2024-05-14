@@ -6,11 +6,21 @@ load_dotenv()
 class PARAMS():
     def __init__(self) -> None:
         self.SOLI_DEO_GLORIA = 'Soli Deo Gloria!' # одному Богу слава!!
-        # ///////////// интрадакшн ///////////////////////////////////
+        # //////////////////////////////////// must have params:
+        # крипто пара:
+        # self.symbol = 'BTCUSDT' 
+        # self.symbol = 'ARBUSDT' 
+        # self.symbol = 'BNBUSDT'
+        self.symbol = 'DOGEUSDT'
+        self.start_depo = 10 # начальное значение депо которое сбрасфывается после тог как текущий self.cur_martin_gale_multiplier достигнет максимального self.max_martin_gale_multiplier (см. настройки мартингейла)
+        self.depo = 10 # депозит в USDT
+        self.lev_size = 1 # размер кредитного плеча
+        self.margin_type = 'ISOLATED' # CROSS (изолированная маржа или кросс маржа. Изолированная по дефолту)  
         self.init_all_params()
 
     def init_all_params(self):
-        self.my_name = 'Nikolas' # ваше имя
+        # ///////////// интрадакшн ///////////////////////////////////
+        self.my_name = 'Denis' # ваше имя
         self.market_place = 'binance' # ...
         self.market_type = 'futures' # ...
         # /////////////////////////////////////////
@@ -31,8 +41,7 @@ class PARAMS():
         # ////////////////////// некоторые переменные /////////////////////////////////////////
         self.cur_klines_data = None
         self.direction = None        
-        # ////////////////////////////////////
-        self.trading_must_have_settings()
+        #///////////////////////////////////////////////
         self.filter_settings()
         self.stop_loss_settings()
         self.ema_settings()
@@ -40,17 +49,6 @@ class PARAMS():
         self.martin_gale_settings()
         self.default_tg_vars()
         self.init_keys()
-
-    def trading_must_have_settings(self):
-        # крипто пара:
-        # self.symbol = 'BTCUSDT' 
-        # self.symbol = 'ARBUSDT' 
-        # self.symbol = 'BNBUSDT'
-        self.symbol = 'DOGEUSDT'
-        self.start_depo = 10 # начальное значение депо которое сбрасфывается после тог как текущий self.cur_martin_gale_multiplier достигнет максимального self.max_martin_gale_multiplier (см. настройки мартингейла)
-        self.depo = 10 # депозит в USDT
-        self.lev_size = 1 # размер кредитного плеча
-        self.margin_type = 'ISOLATED' # CROSS (изолированная маржа или кросс маржа. Изолированная по дефолту)  
 
     def filter_settings(self):
         self.problem_pairs = ['shitok1', 'shitok2'] # монеты исключени. Например ['shitokusdt', 'shitok2usdt']
@@ -74,9 +72,9 @@ class PARAMS():
         self.ricks_earnings_ratio = '1:3' # соотношение риска к прибыли. только для 'FIXED_GLOBAL_TYPE'
         # //////// способы вычисления точки стоп лосса: /////////////////
         # self.stop_loss_type = 'LAST_MIN' # стоп лосс по последнуму локальному минимуму или максимуму
-        self.stop_loss_type = 'ABSOLUTE_MIN' # стоп лосс по минимуму или максимуму за определенный период. Берется период равный длине наибольшего периода ema
+        # self.stop_loss_type = 'ABSOLUTE_MIN' # стоп лосс по минимуму или максимуму за определенный период. Берется период равный длине наибольшего периода ema
         # self.stop_loss_type = 'ATR_VAL' # стоп лосс по волатильности умноженный на 1.6
-        # self.stop_loss_type = 'FIXED' # фиксированный стоп. Может быть как в 'TRAILLING_GLOBAL_TYPE' так и в 'FIXED_GLOBAL_TYPE'
+        self.stop_loss_type = 'FIXED' # фиксированный стоп. Может быть как в 'TRAILLING_GLOBAL_TYPE' так и в 'FIXED_GLOBAL_TYPE'
         self.default_stop_loss_ratio_val = 0.01 # дефолтное значение stop_loss_ratio для self.stop_loss_type = 'FIXED' или в результате аномалий при вычислении stop_loss_ratio
         # /////////////////////////////////////////////////////
 
@@ -130,6 +128,6 @@ class PARAMS():
         self.api_key  = os.getenv(f"{self.market_place.upper()}_API_PUBLIC_KEY", "")
         self.api_secret = os.getenv(f"{self.market_place.upper()}_API_PRIVATE_KEY", "")
         self.tg_api_token = os.getenv("TG_TOKEN", "")
-        print(self.tg_api_token)
+        # print(self.tg_api_token)
         self.coinMarketCup_api_token = os.getenv("COIN_MARKET_CUP_TOKEN", "")
         self.seq_control_token = os.getenv("ACESS_TOKEN", "")

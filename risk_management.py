@@ -23,7 +23,7 @@ class STOP_LOGIC(STRATEGY):
             return fixed_stop_loss_ratio_val
         if stop_loss_type == 'ATR_VAL':
             _, atr_value  = self.calculate_atr(candles_df, atr_period)
-            stop_loss_ratio = round(atr_value / enter_price * 1.618, 7)                
+            stop_loss_ratio = round(atr_value / enter_price * 1.2, 7)                
 
         if direction == 1:
             if stop_loss_type == 'LAST_MIN':
@@ -33,13 +33,13 @@ class STOP_LOGIC(STRATEGY):
                 if last_local_minima >= enter_price:
                     return fixed_stop_loss_ratio_val
                 else:
-                    stop_loss_ratio = (enter_price - last_local_minima) / enter_price
+                    stop_loss_ratio = ((enter_price - last_local_minima) / enter_price)* 1.2
             elif stop_loss_type == 'ABSOLUTE_MIN':
                 absolute_min = candles_df['Low'].min()
                 if absolute_min >= enter_price:
                     return fixed_stop_loss_ratio_val
                 else:
-                    stop_loss_ratio = (enter_price - absolute_min) / enter_price
+                    stop_loss_ratio = ((enter_price - absolute_min) / enter_price)* 1.2
         elif direction == -1:
             if stop_loss_type == 'LAST_MIN':
                 highs = candles_df['High']
@@ -48,16 +48,16 @@ class STOP_LOGIC(STRATEGY):
                 if last_local_maxima <= enter_price:
                     return fixed_stop_loss_ratio_val
                 else:
-                    stop_loss_ratio = abs(enter_price - last_local_maxima) / enter_price
+                    stop_loss_ratio = (abs(enter_price - last_local_maxima) / enter_price)* 1.2
             elif stop_loss_type == 'ABSOLUTE_MIN':
                 absolute_max = candles_df['High'].max()
                 if absolute_max <= enter_price:
                     return fixed_stop_loss_ratio_val
                 else:
-                    stop_loss_ratio = abs(enter_price - absolute_max) / enter_price
+                    stop_loss_ratio = (abs(enter_price - absolute_max) / enter_price)* 1.2
 
-        if stop_loss_ratio is not None and stop_loss_ratio < 0.0015:
-            print(f"stop_loss_ratio < 0.0015: {stop_loss_ratio < 0.0015}")
+        if stop_loss_ratio is not None and stop_loss_ratio < 0.005:
+            print(f"stop_loss_ratio < 0.0015: {stop_loss_ratio < 0.005}")
             return fixed_stop_loss_ratio_val
         return round(stop_loss_ratio, 7)
     

@@ -103,11 +103,13 @@ class BINANCE_API(CONNECTOR_BINANCEE):
         return self.HTTP_request(self.set_margin_type_url, method='POST', headers=self.headers, params=params)
         
     @log_exceptions_decorator
-    def set_leverage(self, symbol, lev_size):                
+    def set_leverage(self, symbol, lev_size):  
+        print(symbol, lev_size)              
         params = {}
         params['symbol'] = symbol
         params['leverage'] = lev_size
         params = self.get_signature(params)
+        print(params)
         return self.HTTP_request(self.set_leverage_url, method='POST', headers=self.headers, params=params)
 
     @log_exceptions_decorator
@@ -126,7 +128,6 @@ class BINANCE_API(CONNECTOR_BINANCEE):
         resp = self.HTTP_request(self.create_order_url, method='POST', headers=self.headers, params=params)
         # print(resp)
         return resp
-
 
     @log_exceptions_decorator
     def tralling_stop_order(self, symbol, qty, side, callback_rate, market_type='TRAILING_STOP_MARKET'):

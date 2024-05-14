@@ -49,15 +49,6 @@ class TG_ASSISTENT(CONNECTOR_TG):
 class TEMPLATES(TG_ASSISTENT):
     def __init__(self):  
         super().__init__()
-
-    @log_exceptions_decorator
-    def set_leverage_temp(self):
-        print("Устанавливаем кредитное плечо:")
-        self.last_message.text = self.connector_func(self.last_message, "Устанавливаем кредитное плечо:")
-        set_leverage_resp = self.set_leverage(self.symbol, self.lev_size)
-        print(set_leverage_resp)
-        self.last_message.text = self.connector_func(self.last_message, str(set_leverage_resp))
-        return True 
     
     @log_exceptions_decorator
     def make_orders_template(self, qty, market_type, target_price):
@@ -77,6 +68,7 @@ class TEMPLATES(TG_ASSISTENT):
         side = 'BUY' if self.direction == -1 else 'SELL'
         callbackRate = round(stop_loss_ratio*100, 2)
         if callbackRate < 0.1:
+            print("callbackRate < 0.1")
             callbackRate = 0.1 # в % для трелинг стоп лосса
         try:
             order_answer = self.tralling_stop_order(self.symbol, qty, side, callbackRate)            
@@ -104,7 +96,8 @@ class TEMPLATES(TG_ASSISTENT):
         cur_price = self.cur_klines_data['Close'].iloc[-1]
         qty, price_precession = self.usdt_to_qnt_converter(self.symbol, self.depo, symbol_info, cur_price)
         print("qty, cur_price:")
-        self.last_message.text = self.connector_func(self.last_message, "qty, cur_price:") 
+        self.last_message.text = self.connector_func(self.last_message, "qty, cur_price:")
+        self.last_message.text = self.connector_func(self.last_message, f"{qty}, {price_precession}") 
         self.from_anomal_view_to_normal([qty, cur_price]) 
         return cur_price, qty, price_precession   
     
@@ -114,7 +107,8 @@ class TEMPLATES(TG_ASSISTENT):
         enter_price = float(response_trading_list[0].get('avgPrice', cur_price)) 
         order_id = response_trading_list[0].get('orderId', None)
         print("qty, enter_price:")
-        self.last_message.text = self.connector_func(self.last_message, "qty, enter_price:") 
+        self.last_message.text = self.connector_func(self.last_message, "qty, enter_price:")
+        self.last_message.text = self.connector_func(self.last_message, f"{executed_qty}, {enter_price}") 
         self.from_anomal_view_to_normal([executed_qty, enter_price])  
         return enter_price, executed_qty 
     
@@ -144,13 +138,16 @@ class TEMPLATES(TG_ASSISTENT):
             if order_answer['status'] == 'FILLED' or order_answer['status'] == 'NEW':
                 print(f'{side} позиция {market_type} типа была открыта успешно!')
                 self.last_message.text = self.connector_func(self.last_message, f'{side} позиция {market_type} типа была открыта успешно!') 
+                self.last_message.text = self.connector_func(self.last_message, str(order_answer))
                 return True
             elif order_answer['status'] == 'PARTIALLY_FILLED':
                 print(f'{side} позиция {market_type} типа была открыта co статусом PARTIALLY_FILLED')
                 self.last_message.text = self.connector_func(self.last_message, f'{side} позиция {market_type} типа была открыта co статусом PARTIALLY_FILLED') 
+                self.last_message.text = self.connector_func(self.last_message, str(order_answer))
                 return True
         print(f'{side} позиция {market_type} типа не была открыта...')
         self.last_message.text = self.connector_func(self.last_message, f'{side} позиция {market_type} типа не была открыта...') 
+        self.last_message.text = self.connector_func(self.last_message, str(order_answer))
         return False
     
     def martin_gale_regulator(self, last_win_los):
@@ -211,14 +208,22 @@ class MAIN_CONTROLLER(TEMPLATES):
         super().__init__() 
 
     @log_exceptions_decorator
+    def set_leverage_template(self):
+        print("Устанавливаем кредитное плечо:")
+        self.last_message.text = self.connector_func(self.last_message, "Устанавливаем кредитное плечо:")
+        # print(self.symbol, self.lev_size)
+        set_leverage_resp = self.set_leverage(self.symbol, self.lev_size)
+        print(set_leverage_resp)
+        self.last_message.text = self.connector_func(self.last_message, str(set_leverage_resp))
+        return True 
+
+    @log_exceptions_decorator
     def get_signal_shell(self): 
         self.cur_klines_data = self.get_klines(self.symbol)
         return self.get_signals(self.strategy_name, self.smoothing_crossover_condition, self.cur_klines_data, self.ema1_period, self.ema2_period)
   
     @log_exceptions_decorator
     def main_func(self):       
-        self.last_message.text = self.connector_func(self.last_message, f"Hello Denis! Your marketplace is: <<{self.market_place}>> May God blass you!!")
-        print(f"Hello {self.my_name}!\nYour marketplace is: <<{self.market_place.upper()}>>\nYour type market is: <<{self.market_type.upper()}>>\nMay God blass you!!")
         if self.martin_gale_flag:
             print("Мартин Гейл включен")
             self.last_message.text = self.connector_func(self.last_message, "Мартин Гейл включен")               
@@ -241,14 +246,14 @@ class MAIN_CONTROLLER(TEMPLATES):
         set_margin_resp = self.set_margin_type(self.symbol, self.margin_type)
         print(set_margin_resp)
         self.last_message.text = self.connector_func(self.last_message, str(set_margin_resp))
-        self.set_leverage_temp()        
+        self.set_leverage_template()        
         # ////////////////////////////////////////////////////////////
         while True:
             self.cur_klines_data = None
             get_signal_val = None
             if self.stop_bot_flag:
                 self.last_message.text = self.connector_func(self.last_message, "EMA bot was stoped!")
-                print("EMA bot was stoped!")
+                print("EMA bot остановлен!")
                 self.run_flag = False
                 return
             # //////////////////////////////////////////////////////////////////////
@@ -260,7 +265,7 @@ class MAIN_CONTROLLER(TEMPLATES):
             # # //////////////////////////////////////////////////////////////////////
             # ## test:
             print("Следующая итерация")
-            time.sleep(10) # test
+            time.sleep(60) # test
 
             if not in_position:
                 # get_signal_val = await self.get_signal_shell()
@@ -317,8 +322,7 @@ class MAIN_CONTROLLER(TEMPLATES):
                         else:
                             print(f"Размер депозита был изменен и составляет: {self.depo}\n Tекущий Мартин Гейл счетчик равен {self.cur_martin_gale_counter}")
                             self.last_message.text = self.connector_func(self.last_message, f"Размер депозита был изменен и составляет: {self.depo}\n Tекущий Мартин Гейл счетчик равен {self.cur_martin_gale_counter}")
-                    # ///////////////////////////////////////////////////////////////
-                   
+                    # ///////////////////////////////////////////////////////////////                   
                 else:
                     # print("Позиция еще открыта")
                     continue
@@ -329,8 +333,8 @@ class MAIN_CONTROLLER(TEMPLATES):
                 executed_qty = None 
                 enter_price = None 
                 stop_loss_ratio = None                   
-                print(response_trading_list)
-                self.last_message.text = self.connector_func(self.last_message, str(response_trading_list))
+                # print(response_trading_list)
+                # self.last_message.text = self.connector_func(self.last_message, str(response_trading_list))
                 # //////////////////////////////////////////////////////////////////
                 enter_price, executed_qty = self.post_open_true_info_template(response_trading_list, qty, cur_price)                     
                 # /////////////////////////////////////////////////////////////////////
@@ -421,14 +425,16 @@ class TG_MANAGER(MAIN_CONTROLLER):
             # ////////////////////////////////////////////////////////////////////////////
             @self.bot.message_handler(func=lambda message: message.text == 'STOP')             
             def handle_stop(message):
-                if self.seq_control_flag and not self.block_acess_flag:
-                    self.bot.send_message(message.chat.id, "Остановить бота? (y/n)")
-                    self.stop_redirect_flag = True
-                else:
-                    self.bot.send_message(message.chat.id, "Нажмите START для верификации")
+                # if self.seq_control_flag and not self.block_acess_flag:\
+                self.last_message = message
+                self.bot.send_message(message.chat.id, "Остановить бота? (y/n)")
+                self.stop_redirect_flag = True
+                # else:
+                #     self.bot.send_message(message.chat.id, "Нажмите START для верификации")
 
             @self.bot.message_handler(func=lambda message: self.stop_redirect_flag)             
             def handle_stop_redirect(message):
+                self.last_message = message
                 self.stop_redirect_flag = False
                 if message.text.strip().upper() == 'Y':                    
                     self.stop_bot_flag = True 
@@ -438,32 +444,37 @@ class TG_MANAGER(MAIN_CONTROLLER):
             # /////////////////////////////////////////////////////////////////////////////// 
             @self.bot.message_handler(func=lambda message: message.text == 'SEARCH_COINS')             
             def handle_search_coins(message):
-                if self.seq_control_flag and not self.block_acess_flag:
-                    candidate_symbols_list = self.get_top_coins_template()
-                    mess_resp = '\n'.join(candidate_symbols_list)
-                    self.bot.send_message(message.chat.id, mess_resp)
-                else:
-                    self.bot.send_message(message.chat.id, "Нажмите START для верификации")
+                self.last_message = message
+                # if self.seq_control_flag and not self.block_acess_flag:
+                candidate_symbols_list = self.get_top_coins_template()
+                mess_resp = '\n'.join(candidate_symbols_list)
+                self.bot.send_message(message.chat.id, mess_resp)
+                # else:
+                #     self.bot.send_message(message.chat.id, "Нажмите START для верификации")
             # ////////////////////////////////////////////////////////////////////////////
             @self.bot.message_handler(func=lambda message: message.text == 'SETTINGS')             
             def handle_settings(message):
-                if self.seq_control_flag and not self.block_acess_flag:
-                    self.bot.send_message(message.chat.id, "Введите торговую пару, размер депозита (в usdt) и кредитное плечо. Например: btcusdt, 20, 2")
-                    self.settings_redirect_flag = True
-                else:
-                    self.bot.send_message(message.chat.id, "Нажмите START для верификации")
+                self.last_message = message
+                # if self.seq_control_flag and not self.block_acess_flag:
+                self.bot.send_message(message.chat.id, "Введите торговую пару, размер депозита (в usdt) и кредитное плечо. Например: btcusdt 20 2")
+                self.settings_redirect_flag = True
+                # else:
+                #     self.bot.send_message(message.chat.id, "Нажмите START для верификации")
 
             @self.bot.message_handler(func=lambda message: self.settings_redirect_flag)             
             def handle_settings_redirect(message):
+                self.last_message = message
                 self.settings_redirect_flag = False
                 dataa = [x for x in message.text.split(' ') if x and x.strip()]
                 self.symbol = dataa[0].upper()  
                 self.start_depo = self.depo = round(float(dataa[1]), 2)
-                self.lev_size = int(float(dataa[2].upper())) 
+                self.lev_size = int(float(dataa[2])) 
+                # print(self.lev_size)
                 # ///////////////////
+                # self.init_all_params()
                 self.bot.send_message(message.chat.id, f"Текущая торговая пара: {self.symbol}")
                 self.bot.send_message(message.chat.id, f"Текущий депозит: {self.depo}")
-                if self.set_leverage_temp():
+                if self.set_leverage_template():
                     self.bot.send_message(message.chat.id, f"Текущее кредитное плечо: {self.lev_size}")
                 else:
                     self.bot.send_message(message.chat.id, f"Не удалось установить кредитное плеч...")
@@ -478,6 +489,6 @@ class TG_MANAGER(MAIN_CONTROLLER):
 if __name__=="__main__": 
     # asyncio.run(MAIN_CONTROLLER().main_func())
     # MAIN_CONTROLLER().main_func()
-    print('Please go to the Telegram bot interface!')     
+    print('Пожалуйста перейдите в интерфейс вашего телеграм бота!')     
     bot = TG_MANAGER()   
     bot.run()
