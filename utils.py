@@ -1,14 +1,8 @@
-import requests
-from bs4 import BeautifulSoup
 import time
 from datetime import datetime as dttm
-# import asyncio
-# import pandas as pd
-# import datetime
 from random import choice
 import math
 import decimal
-from api_binance import BINANCE_API
 from log import log_exceptions_decorator
 
 # def server_to_utc_difference_counter():
@@ -74,44 +68,4 @@ class UTILS():
         for x in strange_list:
             x_f = decimal.Decimal(str(x))
             normal_list.append(format(x_f, 'f'))
-        print(' '.join(normal_list)) 
-
-
-class COIN_MARKET_API_PARSER():
-    def __init__(self) -> None:
-        # super().__init__()
-        pass
-
-    def top_coins_engin(self, api_key, limit):
-        url = f'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'
-        headers = {
-            'Accepts': 'application/json',
-            'X-CMC_PRO_API_KEY': api_key,
-        }
-        params = {
-            'start': '1',
-            'limit': limit,
-            'convert': 'USD',  
-        }
-        response = requests.get(url, headers=headers, params=params)
-        if response.status_code == 200:
-            data = response.json()
-            top_coins = data['data']
-            return top_coins
-        # else:
-        #     print(f"Ошибка при запросе данных: {response.status_code}")
-        return None
-    
-    def coin_market_cup_top(self, api_key, limit):
-        top_coins_total_list = []
-        top_coins = self.top_coins_engin(api_key, limit)
-        if top_coins:
-            for coin in top_coins:
-                try:
-                    top_coins_total_list.append(f"{coin['symbol']}USDT")
-                except:
-                    pass
-            return top_coins_total_list
-        return
-
-                                    
+        print(' '.join(normal_list))                              

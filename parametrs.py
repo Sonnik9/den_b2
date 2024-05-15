@@ -13,9 +13,9 @@ class PARAMS():
         # self.symbol = 'BTCUSDT' 
         # self.symbol = 'ARBUSDT' 
         # self.symbol = 'BNBUSDT'
-        self.symbol = 'NEARUSDT'
+        # self.symbol = 'NEARUSDT'
         # self.symbol = '1000PEPEUSDT'
-        # self.symbol = 'DOGEUSDT'
+        self.symbol = 'DOGEUSDT'
         self.start_depo = 10 # начальное значение депо которое сбрасфывается после тог как текущий self.cur_martin_gale_multiplier достигнет максимального self.max_martin_gale_multiplier (см. настройки мартингейла)
         self.depo = 10 # депозит в USDT
         self.lev_size = 1 # размер кредитного плеча
@@ -56,6 +56,7 @@ class PARAMS():
         self.init_keys()
 
     def filter_settings(self):
+        self.switch_coins_filter = 1 # для работы чисто с коробки
         self.black_coins_list = ['shitok1', 'shitok2'] # монеты исключени. Например ['shitokusdt', 'shitok2usdt']
         self.price_filter_flag = 0 # фильтр по цене. Сейчас отключен. Включить/выкл: - 1/0
         self.MIN_FILTER_PRICE = 0 # минимальный порог цены. Актуально если self.price_filter_flag = 1
@@ -89,8 +90,8 @@ class PARAMS():
     def ema_settings(self):
         self.kline_time, self.time_frame = 5, 'm' # таймфрейм где челое число - период, а буква - сам тайм фрейм (минута, час и т.д)
         self.interval = str(self.kline_time) + self.time_frame # то же только на китайский мови...
-        # self.strategy_name = 'ema_crossover_2x' # стратегия прересечения двух ema
-        self.strategy_name = 'ema_crossover_3x' # стратегия прересечения трех ema
+        self.strategy_name = 'ema_crossover_2x' # стратегия прересечения двух ema
+        # self.strategy_name = 'ema_crossover_3x' # стратегия прересечения трех ema
         self.ema1_period = 5 # - длина короткой волны
         self.ema2_period = 10 # - длина длинной волны (для 'ema_crossover_3x' длина средней волны)
         self.ema3_period = 100 # для 'ema_crossover_2x' установлен в None. Для 'ema_crossover_3x' обязаня быть челым числом большим чем предыдущие две волны например 25
@@ -98,23 +99,13 @@ class PARAMS():
             self.ema3_period = None
         self.ema_list = [self.ema1_period, self.ema2_period, self.ema3_period] # - для тех части...
         self.max_period = max(x for x in self.ema_list if x is not None) # - для тех части...
-
         self.smoothing_crossover_condition = 1 # рекомендуется в 0. Некое сглаживающие условия для нахождения сигнала. Потенциально может дать больше сигналов, но худшего качества. По желанию 1
 
     def default_statistic_vars(self):
-        self.show_statistic_hour = 0 # время показа дневной статистики (21 - в 9 часов вечера каждого дня)
+        self.show_statistic_hour = 21 # время показа дневной статистики (21 - в 9 часов вечера каждого дня)
         self.win_los = 0 # результат последней сделки (в плюс или в минус)
-        # self.win_count = 0 # количество побед
-        # self.loss_count = 0 # количество неудач
-        # self.win_per = 0 # % побед
-        # self.loss_per = 0 # % неудач
         self.daily_trade_history_list = [] # список трейдов (точки входа и точки выхода в позиции) за все время торгов
         self.total_trade_history_list = [] # список трейдов (точки входа и точки выхода в позиции) за все время торгов
-        # self.max_profit_abs = 0 # макс прибыль в usdt
-        # self.max_drawdown_abs = 0 # макс просадка в usdt
-        # self.total_profit_abs = 0 # итоговый профит в usdt
-        # self.total_losses_abs = 0 # итоговая просадка в usdt
-        # self.profitable_unprofitable_ratio = 0 # соотношение прибыльных сделок к убыточным в %
 
     def martin_gale_settings(self):
         self.martin_gale_flag = 0 # мартин гейл отключен. Включить/выкл: - 1/0
@@ -142,7 +133,7 @@ class PARAMS():
         self.tg_api_token = TG_TOKEN
         self.coinMarketCup_api_token = COIN_MARKET_CUP_TOKEN
         self.seq_control_token = ACESS_TOKEN
-        #//////////////////////////////
+        #////////////////////////////// для деплоя на сервер:
         # self.api_key = os.getenv(f"{self.market_place.upper()}_API_PUBLIC_KEY", "")
         # self.api_secret = os.getenv(f"{self.market_place.upper()}_API_PRIVATE_KEY", "")
         # self.tg_api_token = os.getenv("TG_TOKEN", "")

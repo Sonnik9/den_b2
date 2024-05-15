@@ -2,18 +2,13 @@ import telebot
 from telebot import types 
 import time
 import math
-# import random
-# import asyncio
-# import aiohttp
-# import json
-# import decimal
-# from datetime import datetime
+from parametrs import is_tg_interface_true
 from risk_management import STATISTIC
-from utils import UTILS, COIN_MARKET_API_PARSER
+from utils import UTILS
 from risk_management import STOP_LOGIC
 from log import total_log_instance, log_exceptions_decorator
 
-class CONNECTOR_TG(STATISTIC, UTILS, COIN_MARKET_API_PARSER, STOP_LOGIC):
+class CONNECTOR_TG(STATISTIC, UTILS, STOP_LOGIC):
     def __init__(self):  
         super().__init__()  
         self.bot = telebot.TeleBot(self.tg_api_token)
@@ -191,50 +186,7 @@ class TEMPLATES(TG_ASSISTENT):
                 self.depo = round(self.depo/self.martin_gale_ratio, 2)
         # if self.depo < self.start_depo:
         #     self.depo = self.start_depo
-        return True
-
-    @log_exceptions_decorator   
-    def get_top_coins_template(self):
-        def go_filter(all_binance_tickers, coinsMarket_tickers):
-            top_pairs = []            
-            exclusion_contains_list = ['UP', 'DOWN', 'RUB', 'EUR']
-
-            if all_binance_tickers:
-                if not self.price_filter_flag:
-                    self.MIN_FILTER_PRICE = 0
-                    self.MAX_FILTER_PRICE = math.inf                   
-
-                top_pairs = [ticker for ticker in all_binance_tickers if
-                                ticker['symbol'].upper().endswith('USDT') and
-                                not any(exclusion in ticker['symbol'].upper() for exclusion in exclusion_contains_list) and
-                                (float(ticker['lastPrice']) >= self.MIN_FILTER_PRICE) and (
-                                        float(ticker['lastPrice']) <= self.MAX_FILTER_PRICE)]
-                if self.slice_volum_flag:
-                    top_pairs = sorted(top_pairs, key=lambda x: float(x['quoteVolume']), reverse=True)
-                    top_pairs = top_pairs[:self.SLICE_VOLUME_BINANCE_PAIRS]
-
-                if self.min_volume_usdtFilter_flag:
-                    top_pairs = [x for x in top_pairs if float(x['quoteVolume']) >= self.MIN_VOLUM_USDT]
-
-                if self.slice_volatilyty_flag:
-                    top_pairs = sorted(top_pairs, key=lambda x: abs(float(x['priceChangePercent'])), reverse=True)
-                    top_pairs = top_pairs[:self.SLICE_VOLATILITY]
-                if self.daily_filter_direction == 1:
-                    top_pairs = [x for x in top_pairs if float(x['priceChange']) > 0]
-                elif self.daily_filter_direction == -1:
-                    top_pairs = [x for x in top_pairs if float(x['priceChange']) < 0]
-                if self.volume_range_true:
-                    top_pairs = sorted(top_pairs, key=lambda x: float(x['quoteVolume']), reverse=True)
-                if self.volatility_range_true:
-                    top_pairs = sorted(top_pairs, key=lambda x: abs(float(x['priceChangePercent'])), reverse=True)
-                if self.in_coinMarketCup_is:
-                    return [x['symbol'] for x in top_pairs if x['symbol'] not in self.black_coins_list and x['symbol'] in coinsMarket_tickers]
-                return [x['symbol'] for x in top_pairs if x['symbol'] not in self.black_coins_list]
-        all_binance_tickers = self.get_all_tickers()
-        coinsMarket_tickers = []
-        if self.in_coinMarketCup_is:
-            coinsMarket_tickers = self.coin_market_cup_top(self.coinMarketCup_api_token, self.TOP_MARKET_CUP) 
-        return go_filter(all_binance_tickers, coinsMarket_tickers)        
+        return True       
 
 class MAIN_CONTROLLER(TEMPLATES):
     def __init__(self):  
@@ -255,6 +207,19 @@ class MAIN_CONTROLLER(TEMPLATES):
 
     @log_exceptions_decorator
     def main_func(self):
+        if not is_tg_interface_true:
+            print(f"Привет {self.my_name}! Да благословит вас Бог!")
+            if self.switch_coins_filter:
+                recomended_coins = []            
+                recomended_coins = self.get_top_coins_template()
+                if recomended_coins:
+                    mess_resp = ""
+                    print("Фильтр монет нашел следующие рекомендации:")                
+                    mess_resp = '\n'.join(recomended_coins)
+                    print(mess_resp)                
+                else:
+                    print("На данный момент нет ни одной рекомендации согласно заданным условиям фильтра")
+
         self.run_flag = True
         in_position = False
         create_order_success_flag = False
@@ -310,8 +275,7 @@ class MAIN_CONTROLLER(TEMPLATES):
                 mess_str = "Бот ищет сигнал для входа в позицию. Процесс поиска может занять неопределенное время. Хорошего вам дня!"
                 print(mess_str)
                 if self.last_message: 
-                    self.last_message.text = self.connector_func(self.last_message, mess_str)
-                    
+                    self.last_message.text = self.connector_func(self.last_message, mess_str)                    
                 time_arg = self.kline_time
             # print(time_arg, self.time_frame)
             wait_time = self.time_calibrator(time_arg, self.time_frame)
@@ -338,7 +302,7 @@ class MAIN_CONTROLLER(TEMPLATES):
                         print(get_signal_val)
                         if self.last_message:                                
                             self.last_message.text = self.connector_func(self.last_message, get_signal_val)
-                            last_signal = get_signal_val
+                        last_signal = get_signal_val
                         qty = None
                         cur_price = None
                         price_precession = None
@@ -353,8 +317,7 @@ class MAIN_CONTROLLER(TEMPLATES):
                         if is_no_signal_counter % is_no_signal_count_until == 0:
                             print(f"Нет сигнала на протяжение {is_no_signal_counter} минут")
                             if self.last_message:
-                                self.last_message.text = self.connector_func(self.last_message, f"Нет сигнала на протяжение {is_no_signal_counter} минут")
-                                
+                                self.last_message.text = self.connector_func(self.last_message, f"Нет сигнала на протяжение {is_no_signal_counter} минут")                                
                         continue 
                 else:
                     if self.is_closing_position_true(self.symbol):
@@ -362,9 +325,10 @@ class MAIN_CONTROLLER(TEMPLATES):
                         #//////////////// закрываем сотавшиеся ордера если таковые имеются:
                         cancel_all_open_orders_replay = self.cancel_all_open_orders(self.symbol)
                         print(cancel_all_open_orders_replay)
-                        log_file = total_log_instance.get_logs()
-                        if self.last_message:
-                            self.bot.send_document(self.last_message.chat.id, log_file)  
+                        if is_tg_interface_true:
+                            log_file = total_log_instance.get_logs()
+                            if self.last_message:
+                                self.bot.send_document(self.last_message.chat.id, log_file)  
                         # //////////// show statistic: ///////////////////////////////
                         last_win_los = 0
                         init_order_price, oposit_order_price = 0, 0
@@ -389,14 +353,12 @@ class MAIN_CONTROLLER(TEMPLATES):
                             if not self.martin_gale_regulator(last_win_los):
                                 print(f"Размер депозита был сброшен до начального и составляет: {self.depo}")
                                 if self.last_message:
-                                    self.last_message.text = self.connector_func(self.last_message, f"Размер депозита был сброшен до начального и составляет: {self.depo}")
-                                    
+                                    self.last_message.text = self.connector_func(self.last_message, f"Размер депозита был сброшен до начального и составляет: {self.depo}")                                    
                                 continue 
                             else:
                                 print(f"Размер депозита был изменен и составляет: {self.depo}\n Tекущий Мартин Гейл счетчик равен {self.cur_martin_gale_counter}")
                                 if self.last_message:
                                     self.last_message.text = self.connector_func(self.last_message, f"Размер депозита был изменен и составляет: {self.depo}\n Tекущий Мартин Гейл счетчик равен {self.cur_martin_gale_counter}")
-
                         # ///////////////////////////////////////////////////////////////                   
                     else:
                         # print("Позиция еще открыта")
@@ -529,10 +491,22 @@ class TG_MANAGER(MAIN_CONTROLLER):
             @self.bot.message_handler(func=lambda message: message.text == 'SEARCH_COINS')             
             def handle_search_coins(message):
                 self.last_message = message
+                candidate_symbols_list = []
                 if self.seq_control_flag:
                     candidate_symbols_list = self.get_top_coins_template()
-                    mess_resp = '\n'.join(candidate_symbols_list)
-                    self.bot.send_message(message.chat.id, mess_resp)
+                    if candidate_symbols_list:
+                        mess_resp = ""
+                        pre_recomend_remark = "Фильтр монет нашел следующие рекомендации:"
+                        print(pre_recomend_remark)
+                        self.bot.send_message(message.chat.id, pre_recomend_remark)
+                        mess_resp = '\n'.join(candidate_symbols_list)
+                        print(mess_resp)
+                        self.bot.send_message(message.chat.id, mess_resp)
+                    else:
+                        is_empty_recomend_list_str = "На данный момент нет ни одной рекомендации согласно заданным условиям фильтра"
+                        print(is_empty_recomend_list_str)
+                        self.bot.send_message(message.chat.id, is_empty_recomend_list_str)
+
                 else:
                     self.bot.send_message(message.chat.id, "Нажмите START для верификации")
             # ////////////////////////////////////////////////////////////////////////////
@@ -564,8 +538,7 @@ class TG_MANAGER(MAIN_CONTROLLER):
         except Exception as ex: 
             print(ex)
 
-if __name__=="__main__": 
-    from parametrs import is_tg_interface_true
+if __name__=="__main__":    
     if not is_tg_interface_true:
         MAIN_CONTROLLER().main_func()
     else:

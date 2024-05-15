@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from techniques import STRATEGY
-from api_binance import BINANCE_API
+from coinss_filter import COInN_FILTERR
 from log import log_exceptions_decorator
 
 class STOP_LOGIC(STRATEGY):
@@ -58,7 +58,7 @@ class STOP_LOGIC(STRATEGY):
             return 0.005
         return
     
-class STATISTIC(BINANCE_API):
+class STATISTIC(COInN_FILTERR):
     def __init__(self):  
         super().__init__()
 
