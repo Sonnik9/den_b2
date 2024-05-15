@@ -39,7 +39,7 @@ class CONNECTOR_BINANCEE(PARAMS):
 class BINANCE_API(CONNECTOR_BINANCEE):
     def __init__(self) -> None:
         super().__init__()       
-# ////////////////////////////////////////get//////////////////////////////////
+# ////////////////////////////////////////get api: //////////////////////////////////
     @log_exceptions_decorator
     def get_excangeInfo(self):     
         return self.HTTP_request(self.exchangeInfo_url, method='GET', headers=self.headers)
@@ -47,7 +47,7 @@ class BINANCE_API(CONNECTOR_BINANCEE):
     @log_exceptions_decorator
     def get_all_tickers(self):       
         return self.HTTP_request(self.all_tikers_url, method='GET', headers=self.headers)
-    
+        
     @log_exceptions_decorator
     def get_all_orders(self, symbol):
         params = {
@@ -66,7 +66,7 @@ class BINANCE_API(CONNECTOR_BINANCEE):
         params["symbol"] = symbol
         params["interval"] = self.interval
         # print(f"self.ema2_period: {self.ema2_period}")
-        params["limit"] = int(self.ema2_period*2.5)
+        params["limit"] = int(self.max_period*2.5)
         params = self.get_signature(params)
         klines = self.HTTP_request(self.klines_url, method='GET', headers=self.headers, params=params)
         if klines:
@@ -78,20 +78,22 @@ class BINANCE_API(CONNECTOR_BINANCEE):
         return
 
     @log_exceptions_decorator    
-    def is_open_position_true(self, symbol):
+    def is_closing_position_true(self, symbol):
         positions = None
         params = {
             "symbol": symbol
         }
         params = self.get_signature(params)
-        positions = self.HTTP_request(self.positions_url, method='GET', headers=self.headers, params=params)
-        if positions is not None:           
+        positions = requests.get(self.positions_url, headers=self.headers, params=params)
+        if positions.status_code == 200:    
+            positions = positions.json()                        
             for position in positions:
                 if position['symbol'] == symbol and float(position['positionAmt']) != 0:
-                    return True            
+                    return   
+            return True        
         return
     
-# /////////////////////////////////////////////post////////////////////////////////////////////    
+# ///////////////////////////////////////////// post api: ////////////////////////////////////////////    
     @log_exceptions_decorator
     def set_margin_type(self, symbol, margin_type):                
         params = {}
@@ -109,7 +111,7 @@ class BINANCE_API(CONNECTOR_BINANCEE):
         params['symbol'] = symbol
         params['leverage'] = lev_size
         params = self.get_signature(params)
-        print(params)
+        # print(params)
         return self.HTTP_request(self.set_leverage_url, method='POST', headers=self.headers, params=params)
 
     @log_exceptions_decorator
@@ -142,4 +144,14 @@ class BINANCE_API(CONNECTOR_BINANCEE):
         params = self.get_signature(params)
         resp = self.HTTP_request(self.create_order_url, method='POST', headers=self.headers, params=params)
         # print(resp)
+        return resp
+    
+    # //////////////////////////////////// delete api:
+    @log_exceptions_decorator
+    def cancel_all_open_orders(self, symbol):
+        params = {
+            'symbol': symbol            
+        }
+        params = self.get_signature(params)
+        resp = self.HTTP_request(self.cancel_all_orders_url, method='DELETE', headers=self.headers, params=params)
         return resp

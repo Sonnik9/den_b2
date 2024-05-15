@@ -1,11 +1,10 @@
 import pandas_ta as ta
-from finta import TA
 from log import log_exceptions_decorator
 
 class INDICATORS():
     def __init__(self) -> None:
         pass     
-    # pandas_ta lib: .......................................  
+    # pandas_ta library: .......................................  
     @log_exceptions_decorator 
     def calculate_ema(self, data, ema1_period, ema2_period, ema3_period):
         data[f"EMA{ema1_period}"] = ta.ema(data['Close'], length=ema1_period)
@@ -20,8 +19,6 @@ class INDICATORS():
         data[f"ATR{atr_period}"] = ta.atr(data['High'], data['Low'], data['Close'], length=atr_period)
         data.dropna(inplace=True)
         return data, data[f"ATR{atr_period}"].iloc[-1]
-
-    # //////////////////////////////////////////////////////////////////////////////////
 
 class STRATEGY(INDICATORS):
     def __init__(self) -> None:
@@ -57,5 +54,3 @@ class STRATEGY(INDICATORS):
             elif ((df[f"EMA{ema1_period}"].iloc[-1] < df[f"EMA{ema2_period}"].iloc[-1]) and (df[f"EMA{ema2_period}"].iloc[-1] < df[f"EMA{ema3_period}"].iloc[-1])) and (((df[f"EMA{ema1_period}"].iloc[-2] > df[f"EMA{ema2_period}"].iloc[-2]) and (df[f"EMA{ema2_period}"].iloc[-2] > df[f"EMA{ema3_period}"].iloc[-2])) or smoothing_short_flag): 
                 return "SHORT_SIGNAL"
         return
-             
-# python -m CALC.indicators

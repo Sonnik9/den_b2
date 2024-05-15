@@ -1,12 +1,13 @@
-beautifulsoup4==4.12.3
-bs4==0.0.2
-lxml==5.2.1
 numpy==1.26.4
 pandas==2.2.2
 pandas-ta==0.3.14b0
 pyTelegramBotAPI==4.17.0
-python-dotenv==1.0.1
 requests==2.31.0
-urllib3==2.2.1
-
-
+# ////////////
+# numpy==1.26.4
+# pandas==2.2.2
+# pandas-ta==0.3.14b0
+# pyTelegramBotAPI==4.17.0
+# python-dotenv==1.0.1
+# requests==2.31.0
+# urllib3==2.2.1

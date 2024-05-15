@@ -1,8 +1,3 @@
-# import time
-# import random
-# import asyncio
-# import aiohttp
-# import json
 from datetime import datetime, timedelta
 from techniques import STRATEGY
 from api_binance import BINANCE_API
@@ -18,12 +13,14 @@ class STOP_LOGIC(STRATEGY):
         if enter_price == 0:
             return
         stop_loss_ratio = None
-        atr_period = period = int(candles_df.shape[0]/ 2.5) + 1  
+        period = int(candles_df.shape[0]/ 2.5) + 1  
         if stop_loss_type == 'FIXED':
             return fixed_stop_loss_ratio_val
         if stop_loss_type == 'ATR_VAL':
+            atr_period = period 
+            # atr_period = int(candles_df.shape[0]) - 1
             _, atr_value  = self.calculate_atr(candles_df, atr_period)
-            stop_loss_ratio = round(atr_value / enter_price * 1.2, 7)                
+            return (atr_value / enter_price) * 1.1   
 
         if direction == 1:
             if stop_loss_type == 'LAST_MIN':
@@ -33,13 +30,13 @@ class STOP_LOGIC(STRATEGY):
                 if last_local_minima >= enter_price:
                     return fixed_stop_loss_ratio_val
                 else:
-                    stop_loss_ratio = ((enter_price - last_local_minima) / enter_price)* 1.2
+                    return ((enter_price - last_local_minima) / enter_price)* 1.1
             elif stop_loss_type == 'ABSOLUTE_MIN':
                 absolute_min = candles_df['Low'].min()
                 if absolute_min >= enter_price:
                     return fixed_stop_loss_ratio_val
                 else:
-                    stop_loss_ratio = ((enter_price - absolute_min) / enter_price)* 1.2
+                    return ((enter_price - absolute_min) / enter_price)* 1.1
         elif direction == -1:
             if stop_loss_type == 'LAST_MIN':
                 highs = candles_df['High']
@@ -48,23 +45,24 @@ class STOP_LOGIC(STRATEGY):
                 if last_local_maxima <= enter_price:
                     return fixed_stop_loss_ratio_val
                 else:
-                    stop_loss_ratio = (abs(enter_price - last_local_maxima) / enter_price)* 1.2
+                    return (abs(enter_price - last_local_maxima) / enter_price)* 1.1
             elif stop_loss_type == 'ABSOLUTE_MIN':
                 absolute_max = candles_df['High'].max()
                 if absolute_max <= enter_price:
                     return fixed_stop_loss_ratio_val
                 else:
-                    stop_loss_ratio = (abs(enter_price - absolute_max) / enter_price)* 1.2
+                    return (abs(enter_price - absolute_max) / enter_price)* 1.1
 
         if stop_loss_ratio is not None and stop_loss_ratio < 0.005:
-            print(f"stop_loss_ratio < 0.0015: {stop_loss_ratio < 0.005}")
-            return fixed_stop_loss_ratio_val
-        return round(stop_loss_ratio, 7)
+            print(f"stop_loss_ratio < 0.004: {stop_loss_ratio < 0.005}")
+            return 0.005
+        return
     
 class STATISTIC(BINANCE_API):
     def __init__(self):  
-        super().__init__()  
-    
+        super().__init__()
+
+    @log_exceptions_decorator
     def last_statistic(self, symbol):        
         init_order_price, oposit_order_price = 0, 0
         try:
@@ -96,14 +94,16 @@ class STATISTIC(BINANCE_API):
         except Exception as ex:
             print(ex)
         return 0, init_order_price, oposit_order_price, self.depo
+    
     # /////////////////////////////////////////////////////////////
+    @log_exceptions_decorator
     def get_next_show_statistic_time(self):
         current_time = datetime.now()
         target_time = current_time.replace(hour=self.show_statistic_hour, minute=0, second=0)
         if current_time >= target_time:            
             target_time += timedelta(days=1)        
         return target_time
-    
+    @log_exceptions_decorator
     def show_statistic_signal(self, target_time): 
         now_time = datetime.now()      
         if now_time >= target_time:
@@ -111,34 +111,47 @@ class STATISTIC(BINANCE_API):
             return True, target_time          
         return False, target_time
     # /////////////////////////////////////////////////////////////
+
+    @log_exceptions_decorator
     def statistic_calculations(self, daily_trade_history_list):
         result_statistic_dict = {}
+        result_statistic_dict["symbol"] = self.symbol
         if not isinstance(daily_trade_history_list, list) or len(daily_trade_history_list) == 0:
             return {}
+
         try:
-            result_statistic_dict["win_count"] = win_count = sum(1 for win_los, _, _, _ in daily_trade_history_list if win_los == 1)
-            result_statistic_dict["loss_count"] = loss_count = sum(1 for win_los, _, _, _ in daily_trade_history_list if win_los == -1)
-        except Exception as ex:
-            print(ex)
-        try:
+            win_count = sum(1 for win_los, _, _, _ in daily_trade_history_list if win_los == 1)
+            loss_count = sum(1 for win_los, _, _, _ in daily_trade_history_list if win_los == -1)
             total_trade_count = win_count + loss_count
             if total_trade_count != 0:
-                result_statistic_dict["win_per"] = win_per = (win_count*100)/total_trade_count
-                result_statistic_dict["loss_per"] = loss_per = (loss_count*100)/total_trade_count
-                if loss_count != 0 and win_count != 0:
-                    result_statistic_dict["win_to_loss_relation"] = win_to_loss_relation = win_count/ loss_count
-                else:
-                    result_statistic_dict["win_to_loss_relation"] = win_to_loss_relation = f"{win_count}/{loss_count}"
-                result_statistic_dict["win_to_loss_statistik"] = win_to_loss_statistik = f"{win_count}:{loss_count}"
-        except Exception as ex:
-            print(ex)
-        
-        try:
-            result_statistic_dict["max_profit_abs"] = max_profit_abs = max((abs(init_order_price - oposit_order_price)/init_order_price)* last_depo for win_los, init_order_price, oposit_order_price, last_depo in daily_trade_history_list if win_los == 1)
-            result_statistic_dict["max_drawdown_abs"] = max_drawdown_abs = min(-1*(abs(init_order_price - oposit_order_price)/init_order_price)* last_depo for win_los, init_order_price, oposit_order_price, last_depo in daily_trade_history_list if win_los == -1)
-            result_statistic_dict["total_profit_abs"] = total_profit_abs = sum((abs(init_order_price - oposit_order_price)/init_order_price)* last_depo for win_los, init_order_price, oposit_order_price, last_depo in daily_trade_history_list if win_los == 1)
-            result_statistic_dict["total_losses_abs"] = total_losses_abs = sum(-1*(abs(init_order_price - oposit_order_price)/init_order_price)* last_depo for win_los, init_order_price, oposit_order_price, last_depo in daily_trade_history_list if win_los == -1)
+                win_per = (win_count * 100) / total_trade_count
+                loss_per = (loss_count * 100) / total_trade_count
+                win_to_loss_statistik = f"{win_count}:{loss_count}"
+
+                result_statistic_dict["Побед"] = win_count
+                result_statistic_dict["Поражений"] = loss_count
+                result_statistic_dict["Процент побед"] = win_per
+                result_statistic_dict["Процент поражений"] = loss_per
+                result_statistic_dict["Отношение побед к поражениям"] = win_to_loss_statistik
         except Exception as ex:
             print(ex)
 
-        return result_statistic_dict
+        try:
+            max_profit_abs = max((abs(init_order_price - oposit_order_price) / init_order_price) * last_depo for win_los, init_order_price, oposit_order_price, last_depo in daily_trade_history_list if win_los == 1)
+            max_drawdown_abs = min(-1 * (abs(init_order_price - oposit_order_price) / init_order_price) * last_depo for win_los, init_order_price, oposit_order_price, last_depo in daily_trade_history_list if win_los == -1)
+            total_profit_abs = sum((abs(init_order_price - oposit_order_price) / init_order_price) * last_depo for win_los, init_order_price, oposit_order_price, last_depo in daily_trade_history_list if win_los == 1)
+            total_losses_abs = sum(-1 * (abs(init_order_price - oposit_order_price) / init_order_price) * last_depo for win_los, init_order_price, oposit_order_price, last_depo in daily_trade_history_list if win_los == -1)
+
+            result_statistic_dict["Максимальная прибыль ($)"] = max_profit_abs
+            result_statistic_dict["Максимальный убыток ($)"] = max_drawdown_abs
+            result_statistic_dict["Общая прибыль ($)"] = total_profit_abs
+            result_statistic_dict["Общий убыток ($)"] = total_losses_abs
+        except Exception as ex:
+            print(ex)
+
+        # Вывод результатов в столбик
+        result_string = ""
+        for key, value in result_statistic_dict.items():
+            result_string += f"{key}: {value}\n"
+
+        return result_string
